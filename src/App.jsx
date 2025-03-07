@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import * as bootstrap from "bootstrap";
 import "./assets/style.css";
@@ -73,7 +73,7 @@ function App() {
         newImages.push("");
       }
 
-      if (newImages.length > 1 && newImages[newImages - 1] === "") {
+      if (newImages.length > 1 && newImages[newImages.length - 1] === "") {
         newImages.pop();
       }
       
@@ -104,9 +104,7 @@ function App() {
     try {
       const res = await axios.get(`${BASE_URL}/v2/api/${API_PATH}/admin/products?page=${page}`);
       setProducts(res.data.products);
-      setPageInfo(res.data.pagination)
-      console.log(res.data);
-      
+      setPageInfo(res.data.pagination);
     } catch (error) {
       console.error(error);
     }
@@ -137,19 +135,19 @@ function App() {
       let res;
       if (modalType === "edit") {
         res = await axios.put(url, productData);
-        console.log("更新成功", res.data);
+        console.log("更新成功:", res.data);
       } else {
         res = await axios.post(url, productData);
-        console.log("新增成功", res.data);
+        console.log("新增成功:", res.data);
       }
 
       productModalRef.current.hide();
       getProducts();
     } catch (error) {
       if (modalType === "edit") {
-        console.error("更新失敗", error.response.data.message);
+        console.error("更新失敗:", error.response.data.message);
       } else {
-        console.error("新增失敗", error.response.data.message);
+        console.error("新增失敗:", error.response.data.message);
       }
     }
   }
@@ -160,13 +158,28 @@ function App() {
       const res =await axios.delete(
         `${BASE_URL}/v2/api/${API_PATH}/admin/product/${id}`
       );
-      console.log("刪除成功", res.data);
+      console.log("刪除成功:", res.data);
       productModalRef.current.hide();
       getProducts();
     } catch (error) {
-      console.error("刪除失敗", error.response.data.message);
+      console.error("刪除失敗:", error.response.data.message);
     }
   }
+
+  //  檢查登入
+  const checkLogin = useCallback(async () => {
+    try {
+      await axios.post(`${BASE_URL}/v2/api/user/check`);
+      getProducts();
+      setIsAuth(true);
+    } catch (error) {
+      setIsAuth(false);
+      console.error(error);
+    } finally {
+      setIsPageLoading(false);
+    }
+  }, []);
+
 
   const [account, setAccount] = useState({
     username: "",
@@ -197,20 +210,7 @@ function App() {
         document.activeElement.blur();
       }
     });
-  }, []);
-
-  const checkLogin = async () => {
-    try {
-      await axios.post(`${BASE_URL}/v2/api/user/check`);
-      getProducts();
-      setIsAuth(true);
-    } catch (error) {
-      setIsAuth(false);
-      console.error(error);
-    } finally {
-      setIsPageLoading(false);
-    }
-  }
+  }, [checkLogin]);
 
   //  帳號密碼輸入
   const handleInputChange = (e) => {
@@ -240,6 +240,27 @@ function App() {
 
   const handlePageChange = (page) => {
     getProducts(page);
+  }
+
+  const handleFileChange = async (e) => {
+    console.log(e.target);
+
+    const file = e.target.files[0];
+
+    const formData = new FormData();
+    formData.append("file-to-upload", file);
+
+    try {
+      const res = await axios.post(`${BASE_URL}/v2/api/${API_PATH}/admin/upload`, formData);
+      const uploadedImageUrl = res.data.imageUrl;
+
+      setTempProduct({
+        ...tempProduct,
+        imageUrl: uploadedImageUrl
+      })
+    } catch (error) {
+      console.error("上傳失敗:", error.response.data.message);
+    }
   }
 
   return (
@@ -313,7 +334,7 @@ function App() {
               </li>
 
               {Array.from({ length: pageInfo.total_pages }).map((_, index) => (
-                <li className={`page-item ${pageInfo.current_page === index +1 && 'active'}`}>
+                <li key={index} className={`page-item ${pageInfo.current_page === index +1 && 'active'}`}>
                   <a className="page-link" href="#" onClick={() => handlePageChange(index + 1)}>
                     {index + 1}
                   </a>
@@ -394,6 +415,16 @@ function App() {
               <div className="row">
                 <div className="col-sm-4">
                   <div className="mb-2">
+                    <div className="mb-5">
+                      <label htmlFor="fileInput" className="form-label"> 圖片上傳 </label>
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png"
+                        className="form-control"
+                        id="fileInput"
+                        onChange={handleFileChange}
+                      />
+                    </div>
                     <div className="mb-3">
                       <label htmlFor="imageUrl" className="form-label">
                         輸入圖片網址
@@ -407,11 +438,13 @@ function App() {
                         onChange={handleModalInputChange}
                       />
                     </div>
-                    <img
-                      className="img-fluid"
-                      src={tempProduct.imageUrl}
-                      alt="主圖"
-                    />
+                    {tempProduct.imageUrl ? (
+                      <img
+                        className="img-fluid"
+                        src={tempProduct.imageUrl}
+                        alt="主圖"
+                      />
+                    ): null}
                   </div>
                   <div>
                     {tempProduct.imagesUrl.map((image, index) => (
