@@ -3,6 +3,7 @@ import axios from "axios";
 import * as bootstrap from "bootstrap";
 import "./assets/style.css";
 import LoginPage from "./pages/LoginPage";
+import Pagination from "./component/Pagination";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 const API_PATH = import.meta.env.VITE_API_PATH;
@@ -11,6 +12,7 @@ function App() {
   // modal 產品資料
   const productModalRef = useRef(null);
   const [modalType, setModalType] = useState("");
+  const [pageInfo, setPageInfo] = useState({});
   const [tempProduct, setTempProduct] = useState({
     id: "",
     imageUrl: "",
@@ -208,11 +210,9 @@ function App() {
     });
   }, [checkLogin]);
 
-  const [pageInfo, setPageInfo] = useState({});
+  
 
-  const handlePageChange = (page) => {
-    getProducts(page);
-  }
+  
 
   const handleFileChange = async (e) => {
     console.log(e.target);
@@ -296,31 +296,7 @@ function App() {
             ))}       
           </tbody>
         </table>
-        <div className="d-flex justify-content-center">
-          <nav>
-            <ul className="pagination">
-              <li className={`page-item ${!pageInfo.has_pre && 'disabled'}`}>
-                <a className="page-link" href="#" onClick={() => handlePageChange(pageInfo.current_page - 1)}>
-                  上一頁
-                </a>
-              </li>
-
-              {Array.from({ length: pageInfo.total_pages }).map((_, index) => (
-                <li key={index} className={`page-item ${pageInfo.current_page === index +1 && 'active'}`}>
-                  <a className="page-link" href="#" onClick={() => handlePageChange(index + 1)}>
-                    {index + 1}
-                  </a>
-                </li>
-              ))}
-
-              <li className={`page-item ${!pageInfo.has_next && 'disabled'}`}>
-                <a className="page-link" href="#" onClick={() => handlePageChange(pageInfo.current_page + 1)}>
-                  下一頁
-                </a>
-              </li>
-            </ul>
-          </nav>
-        </div>
+        <Pagination pageInfo={pageInfo} getProducts={getProducts}/>
       </div>
     ) : <LoginPage getProducts={getProducts} setIsAuth={setIsAuth} />)}
     <div
