@@ -52,6 +52,26 @@ function App() {
     setModalType(type);
   };
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    
+    try {
+      const formData = new FormData();
+      formData.append("file-to-upload", file);
+
+      const res = await axios.post(`${BASE_URL}/v2/api/${API_PATH}/admin/upload`, formData);
+      const uploadedImageUrl = res.data.imageUrl;
+
+      setTempProduct({
+        ...tempProduct,
+        imageUrl: uploadedImageUrl
+      })
+    } catch (error) {
+      console.error("上傳失敗:", error.response.data.message);
+    }
+  }
+
   //  關閉 Modal 欄位
   const closeModal = () => {
     productModalRef.current.hide();
@@ -210,25 +230,6 @@ function App() {
       }
     });
   }, [checkLogin]);
-
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-
-    const formData = new FormData();
-    formData.append("file-to-upload", file);
-
-    try {
-      const res = await axios.post(`${BASE_URL}/v2/api/${API_PATH}/admin/upload`, formData);
-      const uploadedImageUrl = res.data.imageUrl;
-
-      setTempProduct({
-        ...tempProduct,
-        imageUrl: uploadedImageUrl
-      })
-    } catch (error) {
-      console.error("上傳失敗:", error.response.data.message);
-    }
-  }
 
   return (
     <>
