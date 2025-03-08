@@ -239,7 +239,7 @@ function App() {
           <button
             type="button"
             className="btn btn-outline-primary btn-sm"
-            onClick={() => openModal("new")}
+            onClick={() => openModal("", "new")}
           >
             建立新產品
           </button>
